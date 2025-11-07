@@ -463,7 +463,7 @@ def scrape_bbc_tamil(connection, months=6):
 # Main execution
 if __name__ == "__main__":
     # Categories to scrape
-    vikatan_categories = ["technology", "business"]
+    vikatan_categories = ["technology", "business", "spiritual/astrology"]
     
     # Set months to scrape (articles from last N months)
     MONTHS_TO_SCRAPE = int(os.getenv('MONTHS_TO_SCRAPE', 6))
