@@ -1,0 +1,21 @@
+# Core Dependencies
+llama-index>=0.11.0
+llama-index-vector-stores-postgres>=0.2.0
+llama-index-embeddings-huggingface>=0.3.0
+llama-index-embeddings-openai>=0.2.0
+llama-index-embeddings-azure-openai>=0.2.0
+
+# Database
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.23
+pgvector>=0.2.4
+alembic>=1.13.0
+
+# Utilities
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# Optional but recommended
+sentence-transformers>=2.2.2
+torch>=2.0.0

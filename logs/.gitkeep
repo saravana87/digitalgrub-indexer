@@ -1,0 +1,5 @@
+# Logs directory
+# This directory stores application logs
+
+# The .gitkeep file ensures this directory is tracked by git
+# even when empty (log files are ignored by .gitignore)
