@@ -1,0 +1,34 @@
+# FastAPI and Server
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.18
+
+# Database
+sqlalchemy==2.0.35
+psycopg2-binary==2.9.10
+alembic==1.14.0
+
+# LlamaIndex and AI
+llama-index==0.12.3
+llama-index-vector-stores-postgres==0.3.3
+llama-index-embeddings-azure-openai==0.3.0
+llama-index-llms-azure-openai==0.3.0
+
+# Azure OpenAI
+openai==1.54.5
+
+# Configuration
+pydantic==2.9.2
+pydantic-settings==2.6.1
+python-dotenv==1.0.1
+
+# Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.18
+
+# CORS
+fastapi-cors==0.0.6
+
+# Utilities
+httpx==0.27.2
