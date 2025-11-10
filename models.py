@@ -132,6 +132,50 @@ class TNNews(Base):
         }
 
 
+class NewsArticle(Base):
+    """News Articles table model"""
+    __tablename__ = 'news_articles'
+    
+    id = Column(Integer, primary_key=True)
+    title = Column(String(500))
+    url = Column(String(1000))
+    content = Column(Text)
+    content_hash = Column(String(64))
+    category = Column(String(100))
+    scraped_date = Column(DateTime)
+    source = Column(Text)
+    index_status = Column(Integer)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_document_text(self) -> str:
+        """Convert news article record to text for indexing"""
+        parts = []
+        
+        if self.title:
+            parts.append(f"Title: {self.title}")
+        if self.category:
+            parts.append(f"Category: {self.category}")
+        if self.source:
+            parts.append(f"Source: {self.source}")
+        if self.content:
+            parts.append(f"Content: {self.content}")
+        
+        return "\n".join(parts)
+    
+    def to_metadata(self) -> dict:
+        """Extract metadata for filtering"""
+        return {
+            "id": self.id,
+            "title": self.title or "",
+            "url": self.url or "",
+            "category": self.category or "",
+            "source": self.source or "",
+            "scraped_date": self.scraped_date.isoformat() if self.scraped_date else "",
+            "created_at": self.created_at.isoformat() if self.created_at else "",
+        }
+
+
 class AIJob(Base):
     """AI Jobs table model - adjust columns based on your actual schema"""
     __tablename__ = 'aijobs'

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from llama_index.core import Document, VectorStoreIndex, StorageContext, Settings
 from llama_index.vector_stores.postgres import PGVectorStore
 from config import settings
-from models import Job, TNNews, AIJob, SessionLocal, Base
+from models import Job, TNNews, AIJob, NewsArticle, SessionLocal, Base
 
 # Configure logging early
 logging.basicConfig(level=settings.log_level)
@@ -53,7 +53,8 @@ class BaseIndexer:
         )
     
     def _setup_embeddings(self):
-        """Setup embedding model based on configuration"""
+        """Setup embedding model and LLM based on configuration"""
+        # Setup embeddings
         if settings.embedding_provider == "azure":
             logger.info(f"Using Azure OpenAI embeddings: {settings.azure_openai_embedding_deployment}")
             Settings.embed_model = AzureOpenAIEmbedding(
@@ -63,17 +64,39 @@ class BaseIndexer:
                 azure_endpoint=settings.azure_openai_endpoint,
                 api_version=settings.azure_openai_api_version,
             )
+            
+            # Also setup Azure OpenAI LLM globally for metadata extractors
+            from llama_index.llms.azure_openai import AzureOpenAI
+            logger.info(f"Using Azure OpenAI LLM: {settings.azure_openai_llm_model} (deployment: {settings.azure_openai_llm_deployment})")
+            Settings.llm = AzureOpenAI(
+                model=settings.azure_openai_llm_model,  # Actual model name (e.g., "gpt-4o")
+                deployment_name=settings.azure_openai_llm_deployment,  # Azure deployment name
+                api_key=settings.azure_openai_api_key,
+                azure_endpoint=settings.azure_openai_endpoint,
+                api_version=settings.azure_openai_api_version,
+            )
+            
         elif settings.embedding_provider == "openai":
             logger.info(f"Using OpenAI embeddings: {settings.openai_embedding_model}")
             Settings.embed_model = OpenAIEmbedding(
                 model=settings.openai_embedding_model,
                 api_key=settings.openai_api_key
             )
+            
+            # Also setup OpenAI LLM globally
+            from llama_index.llms.openai import OpenAI as OpenAILLM
+            logger.info(f"Using OpenAI LLM: gpt-4")
+            Settings.llm = OpenAILLM(
+                model="gpt-4",
+                api_key=settings.openai_api_key
+            )
+            
         else:
             logger.info(f"Using local embeddings: {settings.local_embedding_model}")
             Settings.embed_model = HuggingFaceEmbedding(
                 model_name=settings.local_embedding_model
             )
+            logger.warning("No LLM configured for local embeddings - metadata extraction will be limited")
     
     def _setup_vector_store(self) -> PGVectorStore:
         """Setup PgVector store"""
@@ -169,7 +192,8 @@ class BaseIndexer:
                         self.index = VectorStoreIndex.from_documents(
                             documents,
                             storage_context=self.storage_context,
-                            show_progress=True
+                            show_progress=True,
+                            transformations=getattr(Settings, 'transformations', None)  # Use transformations if set
                         )
                     else:
                         # Subsequent batches - insert into existing index
@@ -261,6 +285,89 @@ class AIJobIndexer(BaseIndexer):
             model_class=AIJob,
             collection_name=f"{settings.vector_table_prefix}_aijobs"
         )
+
+
+class NewsArticleIndexer(BaseIndexer):
+    """
+    Indexer for News Articles table with transformation pipeline.
+    
+    Uses LlamaIndex transformations for:
+    - SentenceSplitter: Intelligent chunking with paragraph awareness
+    - TitleExtractor: Generate descriptive titles for chunks
+    - KeywordExtractor: Extract relevant keywords (optional)
+    """
+    
+    def __init__(self, use_keyword_extraction: bool = False, use_title_extraction: bool = False):
+        """
+        Initialize NewsArticleIndexer with optional transformation pipeline.
+        
+        Args:
+            use_keyword_extraction: If True, extract keywords using LLM (slower, costs more, may trigger content filters)
+            use_title_extraction: If True, generate titles using LLM (slower, costs more, may trigger content filters)
+        """
+        self.use_keyword_extraction = use_keyword_extraction
+        self.use_title_extraction = use_title_extraction
+        super().__init__(
+            table_name="news_articles",
+            model_class=NewsArticle,
+            collection_name=f"{settings.vector_table_prefix}_news_articles"
+        )
+        
+        # Setup transformation pipeline for news articles
+        self._setup_transformations()
+    
+    def _setup_transformations(self):
+        """Setup transformation pipeline for better chunking and metadata extraction"""
+        from llama_index.core.node_parser import SentenceSplitter
+        from llama_index.core.extractors import TitleExtractor, KeywordExtractor
+        from llama_index.llms.azure_openai import AzureOpenAI
+        
+        logger.info("Setting up transformation pipeline for news articles")
+        
+        # Setup Azure OpenAI LLM for metadata extraction
+        llm = AzureOpenAI(
+            model=settings.azure_openai_llm_model,  # Actual model name (e.g., "gpt-4o")
+            deployment_name=settings.azure_openai_llm_deployment,  # Azure deployment name
+            api_key=settings.azure_openai_api_key,
+            azure_endpoint=settings.azure_openai_endpoint,
+            api_version=settings.azure_openai_api_version,
+        )
+        
+        # Create transformations list
+        transformations = [
+            # 1. Split text intelligently with paragraph awareness
+            SentenceSplitter.from_defaults(
+                chunk_size=512,              # Smaller chunks for news (2-3 paragraphs)
+                chunk_overlap=50,            # 10% overlap for context continuity
+                paragraph_separator="\n\n",  # News typically uses double newlines
+                include_metadata=True,       # Preserve metadata (category, source, date)
+                include_prev_next_rel=True   # Maintain article flow
+            ),
+        ]
+        
+        # 2. Optionally generate descriptive titles for each chunk (uses Azure OpenAI LLM)
+        if self.use_title_extraction:
+            transformations.append(
+                TitleExtractor(nodes=5, llm=llm)  # Use 5 surrounding nodes for context
+            )
+            logger.warning("Title extraction enabled - may trigger Azure content filters on some news articles")
+        
+        # 3. Optionally add keyword extraction (requires additional LLM calls)
+        if self.use_keyword_extraction:
+            transformations.append(
+                KeywordExtractor(keywords=5, llm=llm)  # Extract 5 keywords per chunk
+            )
+            logger.warning("Keyword extraction enabled - may trigger Azure content filters on some news articles")
+        
+        # Set transformations in global settings
+        # Note: This affects how documents are processed when creating the index
+        Settings.transformations = transformations
+        
+        logger.info(f"Transformation pipeline configured with {len(transformations)} steps")
+        if self.use_title_extraction or self.use_keyword_extraction:
+            logger.info(f"Using Azure OpenAI LLM: {settings.azure_openai_llm_model} (deployment: {settings.azure_openai_llm_deployment})")
+        else:
+            logger.info("Using basic chunking only (no LLM-based metadata extraction)")
 
 
 # Convenience function

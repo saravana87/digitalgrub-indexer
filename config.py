@@ -80,6 +80,7 @@ class Settings(BaseSettings):
     # LLM Configuration
     llm_provider: str = Field(default="azure", alias="LLM_PROVIDER")
     azure_openai_llm_deployment: str = Field(default="gpt-4o-mini", alias="AZURE_OPENAI_LLM_DEPLOYMENT")
+    azure_openai_llm_model: str = Field(default="gpt-4o", alias="AZURE_OPENAI_LLM_MODEL")  # Actual model name
     openai_model: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL")
     openai_temperature: float = Field(default=0.7, alias="OPENAI_TEMPERATURE")
     openai_max_tokens: int = Field(default=2000, alias="OPENAI_MAX_TOKENS")

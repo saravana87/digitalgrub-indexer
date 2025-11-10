@@ -6,7 +6,6 @@ from typing import List, Optional, Dict, Any
 from llama_index.core import VectorStoreIndex
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.core.retrievers import VectorIndexRetriever
-from llama_index.core.response.schema import Response
 from indexer import JobIndexer, TNNewsIndexer, AIJobIndexer
 from config import settings
 
