@@ -434,39 +434,39 @@ def main():
     ensure_table(conn)
 
     # ---- AI News ----
-    # ai_links = get_ai_news_links("https://www.artificialintelligence-news.com/artificial-intelligence-news/")
-    # for i, url in enumerate(ai_links, 1):
-    #     print(f"[AI News {i}/{len(ai_links)}] Scraping: {url}")
-    #     try:
-    #         title, content = scrape_ai_news_article(url)
-    #         if content:
-    #             upsert_article(conn, title, url, content, "technology", "artificialintelligence-news.com")
-    #     except Exception as e:
-    #         print(f"Skipped due to error: {e}")
+    ai_links = get_ai_news_links("https://www.artificialintelligence-news.com/artificial-intelligence-news/")
+    for i, url in enumerate(ai_links, 1):
+        print(f"[AI News {i}/{len(ai_links)}] Scraping: {url}")
+        try:
+            title, content = scrape_ai_news_article(url)
+            if content:
+                upsert_article(conn, title, url, content, "technology", "artificialintelligence-news.com")
+        except Exception as e:
+            print(f"Skipped due to error: {e}")
 
-    # # ---- TechCrunch ----
-    # tc_links = get_techcrunch_links()
-    # for i, url in enumerate(tc_links, 1):
-    #     print(f"[TechCrunch {i}/{len(tc_links)}] Scraping: {url}")
-    #     try:
-    #         title, content = scrape_techcrunch_article(url)
-    #         if content:
-    #             upsert_article(conn, title, url, content, "technology", "techcrunch.com")
-    #     except Exception as e:
-    #         print(f"Skipped due to error: {e}")
+    # ---- TechCrunch ----
+    tc_links = get_techcrunch_links()
+    for i, url in enumerate(tc_links, 1):
+        print(f"[TechCrunch {i}/{len(tc_links)}] Scraping: {url}")
+        try:
+            title, content = scrape_techcrunch_article(url)
+            if content:
+                upsert_article(conn, title, url, content, "technology", "techcrunch.com")
+        except Exception as e:
+            print(f"Skipped due to error: {e}")
 
-    # # ---- IndianExpress ----
-    # ie_links = get_indianexpress_links(
-    #     "https://indianexpress.com/section/technology/artificial-intelligence/"
-    # )
-    # for i, url in enumerate(ie_links, 1):
-    #     print(f"[IndianExpress {i}/{len(ie_links)}] Scraping: {url}")
-    #     try:
-    #         title, content = scrape_indianexpress_article(url)
-    #         if content:
-    #             upsert_article(conn, title, url, content, "technology", "indianexpress.com")
-    #     except Exception as e:
-    #         print(f"Skipped due to error: {e}")
+    # ---- IndianExpress ----
+    ie_links = get_indianexpress_links(
+        "https://indianexpress.com/section/technology/artificial-intelligence/"
+    )
+    for i, url in enumerate(ie_links, 1):
+        print(f"[IndianExpress {i}/{len(ie_links)}] Scraping: {url}")
+        try:
+            title, content = scrape_indianexpress_article(url)
+            if content:
+                upsert_article(conn, title, url, content, "technology", "indianexpress.com")
+        except Exception as e:
+            print(f"Skipped due to error: {e}")
 
     # ---- MIT News ----
     mit_links = get_mit_links(
